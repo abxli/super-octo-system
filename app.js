@@ -200,7 +200,7 @@ function bust(ex) {
   $("bust-quote").textContent = talk.quote;
   $("bust-finisher").textContent = talk.finisher;
   // The tap counts as a user gesture, so the sound bite can play right away.
-  playSoundBite(talk.quote, talk.finisher, $("btn-hear"), $("bust-finisher"));
+  playSoundBite(talk.quote, talk.finisher, document.querySelector("#bust .yt-slot"), null, $("bust-finisher"));
   $("bust-pet").textContent = speciesEmoji();
   $("bust-talk").textContent = `…what he said. ${pick(ex.talks)}`;
   $("bust-plan").innerHTML = coach.hardPlan.map((s) => `<li>${s}</li>`).join("");
@@ -385,13 +385,12 @@ function pickVoice() {
 }
 
 // Plays a full pep talk: quote lines, then the finisher.
-function playSoundBite(quote, finisher, button, finisherEl) {
+function playSoundBite(quote, finisher, slot, button, finisherEl) {
   if (!state.sound) return toast("Sound is off 🔇");
   stopHype();
 
   // Real sound bites from YouTube when online; the generated hype is the offline backup.
   const yt = COACH_MEDIA.youtube.filter((c) => /^[\w-]{11}$/.test(c.id));
-  const slot = button?.nextElementSibling;
   if (yt.length && navigator.onLine && slot?.classList.contains("yt-slot")) {
     playYouTube(yt, slot, button);
     return;
@@ -461,10 +460,39 @@ function playSoundBite(quote, finisher, button, finisherEl) {
 }
 
 // Shuffled queue so every Short plays once before any repeats.
-let ytBag = [];
+// The queue is saved, so a new visit continues it instead of starting over.
+const YT_BAG_KEY = "gymbuddy:ytBag";
+
+function shuffle(arr) {
+  // Fisher–Yates: every order equally likely.
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function nextClip(list) {
-  if (!ytBag.length) ytBag = [...list].sort(() => Math.random() - 0.5);
-  return ytBag.pop();
+  const ids = new Set(list.map((c) => c.id));
+  let bag = [];
+  try {
+    bag = JSON.parse(localStorage.getItem(YT_BAG_KEY) || "[]").filter((id) => ids.has(id));
+  } catch {}
+  let last = null;
+  try {
+    last = localStorage.getItem(YT_BAG_KEY + ":last");
+  } catch {}
+  if (!bag.length) {
+    bag = shuffle([...ids]);
+    // Don't start a new round with the clip that just played.
+    if (bag.length > 1 && bag[bag.length - 1] === last) [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+  }
+  const id = bag.pop();
+  try {
+    localStorage.setItem(YT_BAG_KEY, JSON.stringify(bag));
+    localStorage.setItem(YT_BAG_KEY + ":last", id);
+  } catch {}
+  return list.find((c) => c.id === id);
 }
 
 // The YouTube IFrame API lets us skip Shorts that were removed or don't allow embedding.
@@ -629,9 +657,6 @@ $("btn-back").addEventListener("click", () => {
   show("home");
 });
 $("btn-another").addEventListener("click", () => currentExcuse && bust(currentExcuse));
-$("btn-hear").addEventListener("click", () =>
-  bustTalk && playSoundBite(bustTalk.quote, bustTalk.finisher, $("btn-hear"), $("bust-finisher"))
-);
 
 function commitToGo() {
   state.busterUsedDate = todayStr();
@@ -651,7 +676,7 @@ $("btn-nope").addEventListener("click", () => {
 });
 
 $("btn-overlay-hear").addEventListener("click", () =>
-  overlayTalk && playSoundBite(overlayTalk.quote, overlayTalk.finisher, $("btn-overlay-hear"), $("overlay-finisher"))
+  overlayTalk && playSoundBite(overlayTalk.quote, overlayTalk.finisher, document.querySelector("#coach-overlay .yt-slot"), $("btn-overlay-hear"), $("overlay-finisher"))
 );
 $("btn-overlay-go").addEventListener("click", () => {
   closeCoach();
