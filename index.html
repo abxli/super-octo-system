@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GymBuddy</title>
+  <meta name="description" content="A tiny gym buddy that grows when you go to the gym.">
+  <meta name="theme-color" content="#ff6b4a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <main class="app">
+    <!-- First run: pick a buddy -->
+    <section id="screen-setup" class="screen" hidden>
+      <h1>Pick your gym buddy</h1>
+      <p class="sub">It grows when you go. It gets sad when you don't. No pressure. 😇</p>
+      <div id="species-grid" class="species-grid"></div>
+      <label class="name-field">
+        <span>Name (optional)</span>
+        <input id="pet-name" type="text" maxlength="24" autocomplete="off" placeholder="">
+      </label>
+      <button id="btn-start" class="btn btn-primary" disabled>Let's go! 🚀</button>
+    </section>
+
+    <!-- Home: the buddy -->
+    <section id="screen-home" class="screen" hidden>
+      <header class="top">
+        <div>
+          <div id="pet-title" class="pet-title"></div>
+          <div id="pet-stage" class="pet-stage"></div>
+        </div>
+        <div class="streak" title="Streak"><span>🔥</span> <b id="streak">0</b></div>
+      </header>
+
+      <div class="bubble" id="bubble"></div>
+
+      <div class="pet-wrap">
+        <div id="pet" class="pet">
+          <span id="pet-emoji" class="pet-emoji"></span>
+          <span id="pet-accessory" class="pet-accessory"></span>
+          <span id="pet-mood" class="pet-mood"></span>
+        </div>
+      </div>
+
+      <div class="level">
+        <div class="level-row"><span>Level <b id="level">1</b></span><span id="xp-text"></span></div>
+        <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
+      </div>
+
+      <div id="week" class="week" aria-label="Last 7 days"></div>
+
+      <div class="actions">
+        <button id="btn-went" class="btn btn-primary btn-big">I went! 💪</button>
+        <button id="btn-excuse" class="btn btn-ghost">I don't wanna… 😩</button>
+      </div>
+    </section>
+
+    <!-- Excuse buster -->
+    <section id="screen-excuses" class="screen" hidden>
+      <header class="top">
+        <button id="btn-back" class="btn-icon" aria-label="Back">←</button>
+        <h2>What's the excuse?</h2>
+        <span></span>
+      </header>
+      <div id="excuse-grid" class="excuse-grid"></div>
+
+      <div id="bust" class="bust" hidden>
+        <div class="bust-head">
+          <span id="bust-pet" class="bust-pet"></span>
+          <p id="bust-talk" class="bust-talk"></p>
+        </div>
+        <div class="plan">
+          <div class="plan-title">Tiny plan</div>
+          <ul id="bust-plan"></ul>
+        </div>
+        <div class="actions">
+          <button id="btn-fine" class="btn btn-primary">Fine, I'll go 🙄</button>
+          <button id="btn-another" class="btn btn-ghost">Another pep talk 🔁</button>
+          <button id="btn-nope" class="btn btn-link">Not today</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

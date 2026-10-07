@@ -1,0 +1,13 @@
+{
+  "name": "GymBuddy",
+  "short_name": "GymBuddy",
+  "description": "A tiny gym buddy that grows when you go to the gym.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8f0",
+  "theme_color": "#ff6b4a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
