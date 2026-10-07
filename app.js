@@ -350,9 +350,11 @@ function startBeat() {
 }
 
 function stopHype() {
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  // Only cancel when something is queued: Safari can drop the next utterance after a cancel.
+  if ("speechSynthesis" in window && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
   if (!hype) return;
   clearInterval(hype.beat?.timer);
+  clearTimeout(hype.check);
   try {
     const t = audioCtx.currentTime;
     hype.beat.dg.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
@@ -365,19 +367,16 @@ function stopHype() {
 
 // Break a quote into short shoutable lines.
 function chunks(text) {
-  return text
-    .split(/(?<=[,.!?;])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // No regex lookbehind: older iPhones can't parse it.
+  return (text.match(/[^,.!?;]+[,.!?;]*/g) || [text]).map((s) => s.trim()).filter(Boolean);
 }
 
 function pickVoice() {
+  // On-device voices are the most reliable; online ones can fail silently.
   const voices = speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang));
-  return (
-    voices.find((v) => /male|daniel|fred|alex|aaron|arthur|google uk english male/i.test(v.name)) ||
-    voices[0] ||
-    null
-  );
+  const local = voices.filter((v) => v.localService);
+  const deep = /male|daniel|fred|alex|aaron|arthur|david|mark|guy/i;
+  return local.find((v) => deep.test(v.name)) || local[0] || voices.find((v) => deep.test(v.name)) || null;
 }
 
 // Plays a full pep talk: quote lines, then the finisher.
@@ -407,35 +406,49 @@ function playSoundBite(quote, finisher, button, finisherEl) {
   }
 
   const voice = pickVoice();
+  let started = false;
   const say = (text, opts = {}) => {
     const u = new SpeechSynthesisUtterance(text);
-    u.voice = voice;
+    if (voice) u.voice = voice;
+    u.lang = voice?.lang || "en-US";
     u.pitch = opts.pitch ?? 0.55;
     u.rate = opts.rate ?? 1.0;
     u.volume = 1;
+    u.addEventListener("start", () => (started = true));
     speechSynthesis.speak(u);
     return u;
   };
 
-  const lines = chunks(quote);
-  setTimeout(() => {
-    if (!hype) return;
-    lines.forEach((line) => say(line));
-    const last = say(finisher.toUpperCase(), { pitch: 0.7, rate: 1.1 });
-    last.onstart = () => {
-      sting();
-      finisherEl?.classList.remove("pulse");
-      void finisherEl?.offsetWidth;
-      finisherEl?.classList.add("pulse");
-    };
-    last.onend = () => {
-      sting(0.1);
-      setTimeout(stopHype, 900);
-    };
-  }, 700); // let the horn and first drums land
+  // Speak right away, inside the tap: iPhone/Safari block speech that starts
+  // later (e.g. from a timer). The horn and drums run underneath.
+  speechSynthesis.resume(); // Chrome can get stuck paused
+  chunks(quote).forEach((line, i) => {
+    const u = say(line);
+    if (i === 0)
+      u.addEventListener("error", (e) => {
+        if (e.error !== "interrupted" && e.error !== "canceled") voiceHelp();
+      });
+  });
+  const last = say(finisher.toUpperCase(), { pitch: 0.7, rate: 1.1 });
+  last.addEventListener("start", () => {
+    sting();
+    finisherEl?.classList.remove("pulse");
+    void finisherEl?.offsetWidth;
+    finisherEl?.classList.add("pulse");
+  });
+  last.addEventListener("end", () => {
+    sting(0.1);
+    setTimeout(stopHype, 900);
+  });
 
+  // If the voice never starts, tell the user why instead of failing silently.
+  hype.check = setTimeout(() => !started && hype && voiceHelp(), 4000);
   // Failsafe in case the speech engine never reports the end.
   hype.failsafe = setTimeout(stopHype, 30000);
+}
+
+function voiceHelp() {
+  toast("No voice? Turn the volume up, switch off silent mode, or try Chrome/Safari 🔊");
 }
 
 // ---------- setup ----------
