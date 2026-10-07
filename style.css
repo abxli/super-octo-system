@@ -309,3 +309,14 @@ body.coach-mode .btn-sound { display: block; }
 }
 @keyframes eq { 50% { transform: scaleY(0.4); } }
 @keyframes pulse { 50% { transform: scale(1.12); } }
+
+/* YouTube sound-bite player (Shorts are vertical) */
+.yt-slot { display: flex; justify-content: center; }
+.yt-slot iframe {
+  width: min(100%, 260px); aspect-ratio: 9 / 16; max-height: 55vh;
+  border: 2px solid var(--primary); border-radius: 14px; background: #000;
+}
+/* Keep the takeover's buttons in view with a player open; margin:auto centers without clipping the top. */
+.coach-overlay { align-items: flex-start; }
+.coach-card { margin: auto; }
+.coach-overlay .yt-slot iframe { max-height: 36vh; }

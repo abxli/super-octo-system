@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump CACHE when files change.
-const CACHE = "gymbuddy-v5";
+const CACHE = "gymbuddy-v6";
 const ASSETS = ["./", "index.html", "style.css", "app.js", "data.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

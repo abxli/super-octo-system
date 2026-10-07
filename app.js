@@ -352,6 +352,10 @@ function startBeat() {
 function stopHype() {
   // Only cancel when something is queued: Safari can drop the next utterance after a cancel.
   if ("speechSynthesis" in window && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+  for (const slot of document.querySelectorAll(".yt-slot")) {
+    slot.innerHTML = "";
+    slot.hidden = true;
+  }
   if (!hype) return;
   clearInterval(hype.beat?.timer);
   clearTimeout(hype.check);
@@ -383,6 +387,14 @@ function pickVoice() {
 function playSoundBite(quote, finisher, button, finisherEl) {
   if (!state.sound) return toast("Sound is off 🔇");
   stopHype();
+
+  // Real sound bites from YouTube when online; the generated hype is the offline backup.
+  const yt = COACH_MEDIA.youtube.filter((c) => /^[\w-]{11}$/.test(c.id));
+  const slot = button?.nextElementSibling;
+  if (yt.length && navigator.onLine && slot?.classList.contains("yt-slot")) {
+    playYouTube(pickNew(yt, slot.dataset.last), slot, button);
+    return;
+  }
 
   if (COACH_MEDIA.clips.length) {
     const a = new Audio(pick(COACH_MEDIA.clips));
@@ -445,6 +457,28 @@ function playSoundBite(quote, finisher, button, finisherEl) {
   hype.check = setTimeout(() => !started && hype && voiceHelp(), 4000);
   // Failsafe in case the speech engine never reports the end.
   hype.failsafe = setTimeout(stopHype, 30000);
+}
+
+// Random pick that avoids repeating the last clip.
+function pickNew(list, lastId) {
+  const options = list.length > 1 ? list.filter((c) => c.id !== lastId) : list;
+  return pick(options);
+}
+
+function playYouTube(clip, slot, button) {
+  const params = new URLSearchParams({ autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 });
+  if (clip.start) params.set("start", Math.floor(clip.start));
+  if (clip.end) params.set("end", Math.floor(clip.end));
+  const frame = document.createElement("iframe");
+  frame.src = `https://www.youtube-nocookie.com/embed/${clip.id}?${params}`;
+  frame.title = `${COACH.name} sound bite`;
+  frame.allow = "autoplay; encrypted-media; picture-in-picture";
+  frame.referrerPolicy = "strict-origin-when-cross-origin";
+  slot.innerHTML = "";
+  slot.appendChild(frame);
+  slot.dataset.last = clip.id;
+  slot.hidden = false;
+  hype = { button };
 }
 
 function voiceHelp() {

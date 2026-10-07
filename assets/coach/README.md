@@ -18,4 +18,14 @@ If you have the rights to use them, you can drop in your own media:
 
 The sound bites then play a random one of your clips instead of the generated hype.
 
+## YouTube Shorts
+
+When you're online, sound bites come from YouTube Shorts listed in `youtube` in `COACH_MEDIA`. They play in a small player in the coach card, because YouTube requires embedded videos to stay visible. To add one, copy the 11 characters after `shorts/` in its link:
+
+```js
+youtube: [{ id: "KHrtXxjoOrI" }, { id: "5SiPAKsJlqg" }, { id: "NEW_ID_HERE" }],
+```
+
+Offline, it falls back to your audio clips, then the generated hype.
+
 Only add media you have permission to use, and keep in mind that a photo or recording is usually owned by whoever took or recorded it.

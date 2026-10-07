@@ -161,6 +161,9 @@ const COACH = { name: "David Goggins", tag: "COACH" };
 const COACH_MEDIA = {
   photo: "", // e.g. "assets/coach/photo.jpg"
   clips: [], // real audio sound bites, e.g. ["assets/coach/clip1.mp3", "assets/coach/clip2.mp3"]
+  // YouTube Shorts played in a small embedded player (needs internet).
+  // id = the 11 characters after "shorts/" in the link. Optional start/end in seconds.
+  youtube: [{ id: "KHrtXxjoOrI" }, { id: "5SiPAKsJlqg" }],
 };
 
 // Real quotes, always shown with attribution. Keys let excuses pick fitting ones.
