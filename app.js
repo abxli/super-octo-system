@@ -192,7 +192,15 @@ function bust(ex) {
   currentExcuse = ex;
   const coach = COACH_EXCUSES[ex.id];
   for (const c of document.querySelectorAll(".chip")) c.classList.toggle("active", c.textContent.includes(ex.label));
-  $("bust-quote").textContent = GOGGINS_QUOTES[pick(coach.quotes)];
+  // Avoid repeating the same quote on "another pep talk".
+  let talk;
+  do talk = pepTalk(coach.quotes);
+  while (bustTalk && talk.quote === bustTalk.quote && coach.quotes.length > 1);
+  bustTalk = talk;
+  $("bust-quote").textContent = talk.quote;
+  $("bust-finisher").textContent = talk.finisher;
+  // The tap counts as a user gesture, so the sound bite can play right away.
+  playSoundBite(talk.quote, talk.finisher, $("btn-hear"), $("bust-finisher"));
   $("bust-pet").textContent = speciesEmoji();
   $("bust-talk").textContent = `…what he said. ${pick(ex.talks)}`;
   $("bust-plan").innerHTML = coach.hardPlan.map((s) => `<li>${s}</li>`).join("");
@@ -218,9 +226,17 @@ function enterCoachMode() {
   sting();
 }
 
+// A pep talk = one of his quotes + a closing catchphrase.
+function pepTalk(quoteKeys) {
+  return { quote: GOGGINS_QUOTES[pick(quoteKeys)], finisher: pick(GOGGINS_FINISHERS) };
+}
+
+let bustTalk = null;
+let overlayTalk = null;
+
 function exitCoachMode() {
   document.body.classList.remove("coach-mode");
-  stopSpeech();
+  stopHype();
 }
 
 function renderCoachAvatars() {
@@ -242,7 +258,9 @@ function maybeShowCoach() {
   const due = d !== null && d >= COACH_SKIP_DAYS && state.coachDismissedDate !== today && state.busterUsedDate !== today;
   if (!due || !$("coach-overlay").hidden) return;
   $("coach-title").textContent = `${d} DAYS. ${state.name.toUpperCase()} CALLED FOR BACKUP.`;
-  $("overlay-quote").textContent = GOGGINS_QUOTES[pick(["soft", "boats", "denial", "done", "callus"])];
+  overlayTalk = pepTalk(COACH_SKIP_QUOTES);
+  $("overlay-quote").textContent = overlayTalk.quote;
+  $("overlay-finisher").textContent = overlayTalk.finisher;
   $("coach-overlay").hidden = false;
   document.body.classList.add("coach-mode");
 }
@@ -252,25 +270,35 @@ function closeCoach() {
   exitCoachMode();
 }
 
-// ---------- sound ----------
+// ---------- sound: hype sound bites ----------
+// A pep talk = his quote read in short punchy lines over war drums and a bass
+// rumble, then a catchphrase shouted between air horns. All generated in the
+// browser, so it works offline. Real audio clips in COACH_MEDIA.clips win.
 let audioCtx;
+let hype = null; // { timer, drone, button, finisher }
 
-function sting() {
+function ctx() {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function sting(when = 0) {
   if (!state.sound) return;
   try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const t = audioCtx.currentTime;
-    // Air-horn: a few detuned sawtooths with a quick pitch drop.
+    const ac = ctx();
+    const t = ac.currentTime + when;
+    // Air horn: a few detuned sawtooths with a quick pitch drop.
     for (const f of [440, 443, 554]) {
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
+      const o = ac.createOscillator();
+      const g = ac.createGain();
       o.type = "sawtooth";
       o.frequency.setValueAtTime(f, t);
       o.frequency.exponentialRampToValueAtTime(f * 0.92, t + 0.6);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(0.08, t + 0.03);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
-      o.connect(g).connect(audioCtx.destination);
+      o.connect(g).connect(ac.destination);
       o.start(t);
       o.stop(t + 0.7);
     }
@@ -279,56 +307,135 @@ function sting() {
   }
 }
 
-function stopSpeech() {
-  if ("speechSynthesis" in window) speechSynthesis.cancel();
-  for (const slot of document.querySelectorAll(".yt-slot")) {
-    slot.innerHTML = "";
-    slot.hidden = true;
-  }
+function drum(t, gain = 0.5) {
+  const ac = ctx();
+  const o = ac.createOscillator();
+  const g = ac.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(130, t);
+  o.frequency.exponentialRampToValueAtTime(40, t + 0.25);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+  o.connect(g).connect(ac.destination);
+  o.start(t);
+  o.stop(t + 0.45);
 }
 
-// Plays a YouTube bite (online) or one of your own clips if configured,
-// otherwise reads the quote aloud.
-function playSoundBite(quote, slot) {
+// War-drum loop: BOOM . boom-boom . at ~100 bpm, under a low rumble.
+function startBeat() {
+  const ac = ctx();
+  const drone = ac.createOscillator();
+  const filter = ac.createBiquadFilter();
+  const dg = ac.createGain();
+  drone.type = "sawtooth";
+  drone.frequency.value = 55;
+  filter.type = "lowpass";
+  filter.frequency.value = 160;
+  dg.gain.setValueAtTime(0.0001, ac.currentTime);
+  dg.gain.exponentialRampToValueAtTime(0.05, ac.currentTime + 1);
+  drone.connect(filter).connect(dg).connect(ac.destination);
+  drone.start();
+
+  const beat = 0.6;
+  let next = ac.currentTime + 0.05;
+  const timer = setInterval(() => {
+    while (next < ac.currentTime + 0.3) {
+      drum(next, 0.55);
+      drum(next + beat * 1.5, 0.3);
+      drum(next + beat * 1.75, 0.35);
+      next += beat * 2;
+    }
+  }, 100);
+  return { timer, drone, dg };
+}
+
+function stopHype() {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  if (!hype) return;
+  clearInterval(hype.beat?.timer);
+  try {
+    const t = audioCtx.currentTime;
+    hype.beat.dg.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    hype.beat.drone.stop(t + 0.35);
+  } catch {}
+  clearTimeout(hype.failsafe);
+  hype.button?.classList.remove("playing");
+  hype = null;
+}
+
+// Break a quote into short shoutable lines.
+function chunks(text) {
+  return text
+    .split(/(?<=[,.!?;])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function pickVoice() {
+  const voices = speechSynthesis.getVoices().filter((v) => /^en/i.test(v.lang));
+  return (
+    voices.find((v) => /male|daniel|fred|alex|aaron|arthur|google uk english male/i.test(v.name)) ||
+    voices[0] ||
+    null
+  );
+}
+
+// Plays a full pep talk: quote lines, then the finisher.
+function playSoundBite(quote, finisher, button, finisherEl) {
   if (!state.sound) return toast("Sound is off 🔇");
-  const yt = COACH_MEDIA.youtube.filter((c) => /^[\w-]{11}$/.test(c.id));
-  if (yt.length && navigator.onLine) {
-    playYouTube(pick(yt), slot);
-    return;
-  }
+  stopHype();
+
   if (COACH_MEDIA.clips.length) {
     const a = new Audio(pick(COACH_MEDIA.clips));
-    a.play().catch(() => speak(quote));
+    a.play().catch(() => {});
     return;
   }
-  speak(quote);
-}
 
-function speak(text) {
-  sting();
-  if (!("speechSynthesis" in window)) return;
-  stopSpeech();
-  const u = new SpeechSynthesisUtterance(text);
-  u.pitch = 0.6;
-  u.rate = 0.95;
-  const voices = speechSynthesis.getVoices();
-  u.voice = voices.find((v) => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || null;
-  setTimeout(() => speechSynthesis.speak(u), 450); // let the horn land first
-}
+  let beat = null;
+  try {
+    sting();
+    beat = startBeat();
+  } catch {
+    // No Web Audio: words only.
+  }
+  hype = { beat, button };
+  button?.classList.add("playing");
 
-function playYouTube(clip, slot) {
-  stopSpeech();
-  const params = new URLSearchParams({ autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 });
-  if (clip.start) params.set("start", Math.floor(clip.start));
-  if (clip.end) params.set("end", Math.floor(clip.end));
-  const frame = document.createElement("iframe");
-  frame.src = `https://www.youtube-nocookie.com/embed/${clip.id}?${params}`;
-  frame.title = `${COACH.name} sound bite`;
-  frame.allow = "autoplay; encrypted-media; picture-in-picture";
-  frame.referrerPolicy = "strict-origin-when-cross-origin";
-  slot.classList.toggle("wide", !!clip.wide);
-  slot.appendChild(frame);
-  slot.hidden = false;
+  if (!("speechSynthesis" in window)) {
+    hype.failsafe = setTimeout(() => { sting(); stopHype(); }, 3500);
+    return;
+  }
+
+  const voice = pickVoice();
+  const say = (text, opts = {}) => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = voice;
+    u.pitch = opts.pitch ?? 0.55;
+    u.rate = opts.rate ?? 1.0;
+    u.volume = 1;
+    speechSynthesis.speak(u);
+    return u;
+  };
+
+  const lines = chunks(quote);
+  setTimeout(() => {
+    if (!hype) return;
+    lines.forEach((line) => say(line));
+    const last = say(finisher.toUpperCase(), { pitch: 0.7, rate: 1.1 });
+    last.onstart = () => {
+      sting();
+      finisherEl?.classList.remove("pulse");
+      void finisherEl?.offsetWidth;
+      finisherEl?.classList.add("pulse");
+    };
+    last.onend = () => {
+      sting(0.1);
+      setTimeout(stopHype, 900);
+    };
+  }, 700); // let the horn and first drums land
+
+  // Failsafe in case the speech engine never reports the end.
+  hype.failsafe = setTimeout(stopHype, 30000);
 }
 
 // ---------- setup ----------
@@ -423,8 +530,8 @@ $("btn-back").addEventListener("click", () => {
   show("home");
 });
 $("btn-another").addEventListener("click", () => currentExcuse && bust(currentExcuse));
-$("btn-hear").addEventListener("click", (e) =>
-  playSoundBite($("bust-quote").textContent, e.currentTarget.nextElementSibling)
+$("btn-hear").addEventListener("click", () =>
+  bustTalk && playSoundBite(bustTalk.quote, bustTalk.finisher, $("btn-hear"), $("bust-finisher"))
 );
 
 function commitToGo() {
@@ -444,8 +551,8 @@ $("btn-nope").addEventListener("click", () => {
   $("bubble").textContent = pick(NOT_TODAY_LINES);
 });
 
-$("btn-overlay-hear").addEventListener("click", (e) =>
-  playSoundBite($("overlay-quote").textContent, e.currentTarget.nextElementSibling)
+$("btn-overlay-hear").addEventListener("click", () =>
+  overlayTalk && playSoundBite(overlayTalk.quote, overlayTalk.finisher, $("btn-overlay-hear"), $("overlay-finisher"))
 );
 $("btn-overlay-go").addEventListener("click", () => {
   closeCoach();
@@ -460,7 +567,7 @@ $("btn-overlay-snooze").addEventListener("click", () => {
 });
 $("btn-sound").addEventListener("click", () => {
   state.sound = !state.sound;
-  if (!state.sound) stopSpeech();
+  if (!state.sound) stopHype();
   saveState();
   render();
 });

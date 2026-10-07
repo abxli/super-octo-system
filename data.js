@@ -157,15 +157,10 @@ const NOT_TODAY_LINES = [
 const COACH = { name: "David Goggins", tag: "COACH" };
 
 // Optional media you have the rights to. Drop files in assets/coach/ and list them here.
-// Leave empty to use the illustrated badge and built-in sound effects.
+// Leave empty to use the illustrated badge and the built-in hype sound bites.
 const COACH_MEDIA = {
   photo: "", // e.g. "assets/coach/photo.jpg"
-  clips: [], // e.g. ["assets/coach/clip1.mp3", "assets/coach/clip2.mp3"]
-  // YouTube sound bites, played in an embedded player (needs internet).
-  // id = the 11 characters after "shorts/" or "watch?v=". start/end are seconds and optional.
-  // Add wide: true for regular (landscape) videos. Use videos from his official channel.
-  // e.g. { id: "AbCdEfGhIjK" } for a Short, { id: "XyZ12345678", start: 95, end: 110, wide: true }
-  youtube: [],
+  clips: [], // real audio sound bites, e.g. ["assets/coach/clip1.mp3", "assets/coach/clip2.mp3"]
 };
 
 // Real quotes, always shown with attribution. Keys let excuses pick fitting ones.
@@ -182,20 +177,34 @@ const GOGGINS_QUOTES = {
   greatness: "If you can get through doing things that you hate to do, on the other side is greatness.",
   schedule: "It takes relentless self-discipline to schedule suffering into your day, every day.",
   motivation: "Motivation is crap. Motivation comes and goes.",
-  stayhard: "Stay hard!",
+  uncommon: "Be uncommon amongst uncommon people.",
+  mindgame: "Everything in life is a mind game!",
+  pain: "Pain unlocks a secret doorway in the mind, one that leads to both peak performance and beautiful silence.",
+  uncomfortable: "Get comfortable being uncomfortable!",
+  nobody: "No one is going to come help you. No one's coming to save you.",
+  yesterday: "Nobody cares what you did yesterday. What have you done today to better yourself?",
+  tugofwar: "Life is one big tug of war between mediocrity and trying to find your best self.",
+  notion: "It won't always go your way, so you can't get trapped in the notion that it should.",
+  greatnessstay: "Greatness is not something that if you meet it once it stays with you forever.",
 };
+
+// His catchphrases. Every pep talk ends on one, and the sound bite shouts it.
+const GOGGINS_FINISHERS = ["Stay hard!", "Who's gonna carry the boats?", "They don't know me, son!"];
 
 // Which quotes the coach throws at each excuse, plus a harder no-nonsense plan.
 const COACH_EXCUSES = {
-  tired: { quotes: ["forty", "done"], hardPlan: ["10 min warm-up, no phone", "4 × 12 goblet squats", "4 × 10 push-ups", "Finish with a 1 min plank. Then 1 more."] },
-  time: { quotes: ["schedule", "denial"], hardPlan: ["EMOM for 15 min:", "Odd minutes: 15 burpees", "Even minutes: 20 air squats", "No rest beyond the minute."] },
-  sore: { quotes: ["callus", "suffering"], hardPlan: ["20 min incline walk", "Mobility for every sore muscle", "3 × 15 light band work", "Sore is not injured. Show up."] },
-  weather: { quotes: ["soft", "boats"], hardPlan: ["Home gauntlet, 5 rounds:", "20 jumping jacks", "15 lunges each leg", "15 push-ups", "30 sec wall sit"] },
-  clueless: { quotes: ["conversations", "greatness"], hardPlan: ["Full-body, 4 × 10:", "Squat", "Bench or push-ups", "Row", "Then 15 min hard cardio"] },
-  crowded: { quotes: ["boats", "obsessed"], hardPlan: ["Grab one set of dumbbells.", "5 rounds: 10 thrusters", "10 renegade rows", "10 walking lunges", "Own that corner."] },
-  mood: { quotes: ["motivation", "greatness"], hardPlan: ["Shoes on. Out the door.", "20 min of the thing you hate most", "Then do what you like", "Discipline > mood."] },
-  tomorrow: { quotes: ["soft", "denial"], hardPlan: ["Today. Not tomorrow.", "30 min, anything", "Pack the bag for tomorrow too", "Two days > zero days."] },
+  tired: { quotes: ["forty", "done", "pain", "mindgame"], hardPlan: ["10 min warm-up, no phone", "4 × 12 goblet squats", "4 × 10 push-ups", "Finish with a 1 min plank. Then 1 more."] },
+  time: { quotes: ["schedule", "denial", "yesterday", "obsessed"], hardPlan: ["EMOM for 15 min:", "Odd minutes: 15 burpees", "Even minutes: 20 air squats", "No rest beyond the minute."] },
+  sore: { quotes: ["callus", "suffering", "pain", "uncomfortable"], hardPlan: ["20 min incline walk", "Mobility for every sore muscle", "3 × 15 light band work", "Sore is not injured. Show up."] },
+  weather: { quotes: ["soft", "uncomfortable", "notion", "uncommon"], hardPlan: ["Home gauntlet, 5 rounds:", "20 jumping jacks", "15 lunges each leg", "15 push-ups", "30 sec wall sit"] },
+  clueless: { quotes: ["conversations", "greatness", "nobody", "tugofwar"], hardPlan: ["Full-body, 4 × 10:", "Squat", "Bench or push-ups", "Row", "Then 15 min hard cardio"] },
+  crowded: { quotes: ["obsessed", "uncommon", "mindgame", "uncomfortable"], hardPlan: ["Grab one set of dumbbells.", "5 rounds: 10 thrusters", "10 renegade rows", "10 walking lunges", "Own that corner."] },
+  mood: { quotes: ["motivation", "greatness", "conversations", "tugofwar"], hardPlan: ["Shoes on. Out the door.", "20 min of the thing you hate most", "Then do what you like", "Discipline > mood."] },
+  tomorrow: { quotes: ["soft", "denial", "yesterday", "greatnessstay"], hardPlan: ["Today. Not tomorrow.", "30 min, anything", "Pack the bag for tomorrow too", "Two days > zero days."] },
 };
+
+// Quotes for the skip takeover.
+const COACH_SKIP_QUOTES = ["soft", "denial", "done", "callus", "nobody", "yesterday", "greatnessstay", "tugofwar"];
 
 // Original UI copy (not quotes).
 const COACH_TOASTS = [

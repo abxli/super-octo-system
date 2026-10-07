@@ -292,10 +292,20 @@ body.coach-mode .btn-sound { display: block; }
   80% { transform: translateX(3px); }
 }
 
-/* YouTube sound-bite player (Shorts are vertical; add wide: true for regular videos) */
-.yt-slot { display: flex; justify-content: center; }
-.yt-slot iframe {
-  width: min(100%, 280px); aspect-ratio: 9 / 16; max-height: 60vh;
-  border: 2px solid var(--primary); border-radius: 14px; background: #000;
+.coach-finisher {
+  font-family: var(--coach-font); color: var(--primary); text-transform: uppercase;
+  font-size: 1.05rem; letter-spacing: 0.04em;
 }
-.yt-slot.wide iframe { width: 100%; aspect-ratio: 16 / 9; }
+.coach-finisher-big { font-size: 1.5rem; }
+.coach-finisher.pulse { animation: pulse 0.5s ease 2; }
+
+/* "Now playing" equalizer on the sound button */
+.btn-sound.playing::after {
+  content: ""; display: inline-block; width: 18px; height: 12px; margin-left: 10px; vertical-align: middle;
+  background: linear-gradient(var(--primary), var(--primary)) 0 100% / 4px 40% no-repeat,
+              linear-gradient(var(--primary), var(--primary)) 7px 100% / 4px 90% no-repeat,
+              linear-gradient(var(--primary), var(--primary)) 14px 100% / 4px 60% no-repeat;
+  animation: eq 0.6s steps(3) infinite;
+}
+@keyframes eq { 50% { transform: scaleY(0.4); } }
+@keyframes pulse { 50% { transform: scale(1.12); } }
