@@ -281,11 +281,21 @@ function sting() {
 
 function stopSpeech() {
   if ("speechSynthesis" in window) speechSynthesis.cancel();
+  for (const slot of document.querySelectorAll(".yt-slot")) {
+    slot.innerHTML = "";
+    slot.hidden = true;
+  }
 }
 
-// Plays one of your own clips if configured, otherwise reads the quote aloud.
-function playSoundBite(quote) {
+// Plays a YouTube bite (online) or one of your own clips if configured,
+// otherwise reads the quote aloud.
+function playSoundBite(quote, slot) {
   if (!state.sound) return toast("Sound is off 🔇");
+  const yt = COACH_MEDIA.youtube.filter((c) => /^[\w-]{11}$/.test(c.id));
+  if (yt.length && navigator.onLine) {
+    playYouTube(pick(yt), slot);
+    return;
+  }
   if (COACH_MEDIA.clips.length) {
     const a = new Audio(pick(COACH_MEDIA.clips));
     a.play().catch(() => speak(quote));
@@ -304,6 +314,21 @@ function speak(text) {
   const voices = speechSynthesis.getVoices();
   u.voice = voices.find((v) => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || null;
   setTimeout(() => speechSynthesis.speak(u), 450); // let the horn land first
+}
+
+function playYouTube(clip, slot) {
+  stopSpeech();
+  const params = new URLSearchParams({ autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 });
+  if (clip.start) params.set("start", Math.floor(clip.start));
+  if (clip.end) params.set("end", Math.floor(clip.end));
+  const frame = document.createElement("iframe");
+  frame.src = `https://www.youtube-nocookie.com/embed/${clip.id}?${params}`;
+  frame.title = `${COACH.name} sound bite`;
+  frame.allow = "autoplay; encrypted-media; picture-in-picture";
+  frame.referrerPolicy = "strict-origin-when-cross-origin";
+  slot.classList.toggle("wide", !!clip.wide);
+  slot.appendChild(frame);
+  slot.hidden = false;
 }
 
 // ---------- setup ----------
@@ -398,7 +423,9 @@ $("btn-back").addEventListener("click", () => {
   show("home");
 });
 $("btn-another").addEventListener("click", () => currentExcuse && bust(currentExcuse));
-$("btn-hear").addEventListener("click", () => playSoundBite($("bust-quote").textContent));
+$("btn-hear").addEventListener("click", (e) =>
+  playSoundBite($("bust-quote").textContent, e.currentTarget.nextElementSibling)
+);
 
 function commitToGo() {
   state.busterUsedDate = todayStr();
@@ -417,7 +444,9 @@ $("btn-nope").addEventListener("click", () => {
   $("bubble").textContent = pick(NOT_TODAY_LINES);
 });
 
-$("btn-overlay-hear").addEventListener("click", () => playSoundBite($("overlay-quote").textContent));
+$("btn-overlay-hear").addEventListener("click", (e) =>
+  playSoundBite($("overlay-quote").textContent, e.currentTarget.nextElementSibling)
+);
 $("btn-overlay-go").addEventListener("click", () => {
   closeCoach();
   commitToGo();

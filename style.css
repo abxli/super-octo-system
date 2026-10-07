@@ -291,3 +291,11 @@ body.coach-mode .btn-sound { display: block; }
   60% { transform: translateX(-3px); }
   80% { transform: translateX(3px); }
 }
+
+/* YouTube sound-bite player (Shorts are vertical; add wide: true for regular videos) */
+.yt-slot { display: flex; justify-content: center; }
+.yt-slot iframe {
+  width: min(100%, 280px); aspect-ratio: 9 / 16; max-height: 60vh;
+  border: 2px solid var(--primary); border-radius: 14px; background: #000;
+}
+.yt-slot.wide iframe { width: 100%; aspect-ratio: 16 / 9; }

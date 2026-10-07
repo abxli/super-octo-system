@@ -18,4 +18,20 @@ If you have the rights to use them, you can drop in your own media:
 
 "▶ Hear it" then plays a random clip instead of the read-aloud.
 
+## YouTube sound bites
+
+You can also play clips straight from YouTube with an embedded player. Nothing is downloaded, and it needs an internet connection.
+
+1. Open a video or Short on **his official channel**, not a re-upload, and copy its ID: the 11 characters after `shorts/` or `watch?v=`.
+2. Add it to `youtube` in `COACH_MEDIA`:
+
+   ```js
+   youtube: [
+     { id: "AbCdEfGhIjK" },                                  // a Short, plays whole
+     { id: "XyZ12345678", start: 95, end: 110, wide: true }, // seconds 95-110 of a regular video
+   ],
+   ```
+
+When you're online, YouTube clips play first, then your own audio files, then the read-aloud.
+
 Only add media you have permission to use, and keep in mind that a photo or recording is usually owned by whoever took or recorded it.
