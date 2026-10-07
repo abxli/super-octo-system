@@ -34,7 +34,10 @@
           <div id="pet-title" class="pet-title"></div>
           <div id="pet-stage" class="pet-stage"></div>
         </div>
-        <div class="streak" title="Streak"><span>🔥</span> <b id="streak">0</b></div>
+        <div class="top-right">
+          <button id="btn-sound" class="btn-icon" aria-label="Toggle sound">🔊</button>
+          <div class="streak" title="Streak"><span>🔥</span> <b id="streak">0</b></div>
+        </div>
       </header>
 
       <div class="bubble" id="bubble"></div>
@@ -70,18 +73,42 @@
       <div id="excuse-grid" class="excuse-grid"></div>
 
       <div id="bust" class="bust" hidden>
+        <div class="coach-head">
+          <div class="coach-avatar"></div>
+          <div>
+            <div class="coach-tag">COACH SAYS</div>
+            <blockquote id="bust-quote" class="coach-quote"></blockquote>
+            <div class="coach-attr"></div>
+          </div>
+        </div>
+        <button id="btn-hear" class="btn btn-sound">▶ Hear it</button>
         <div class="bust-head">
           <span id="bust-pet" class="bust-pet"></span>
           <p id="bust-talk" class="bust-talk"></p>
         </div>
         <div class="plan">
-          <div class="plan-title">Tiny plan</div>
+          <div class="plan-title">No-excuse plan</div>
           <ul id="bust-plan"></ul>
         </div>
         <div class="actions">
           <button id="btn-fine" class="btn btn-primary">Fine, I'll go 🙄</button>
           <button id="btn-another" class="btn btn-ghost">Another pep talk 🔁</button>
           <button id="btn-nope" class="btn btn-link">Not today</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coach takeover when you've skipped too long -->
+    <section id="coach-overlay" class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title" hidden>
+      <div class="coach-card">
+        <div class="coach-avatar coach-avatar-big"></div>
+        <h2 id="coach-title" class="coach-title"></h2>
+        <blockquote id="overlay-quote" class="coach-quote coach-quote-big"></blockquote>
+        <div class="coach-attr"></div>
+        <button id="btn-overlay-hear" class="btn btn-sound">▶ Hear it</button>
+        <div class="actions">
+          <button id="btn-overlay-go" class="btn btn-primary btn-big">I'm going. 💀</button>
+          <button id="btn-overlay-snooze" class="btn btn-link">…5 more minutes</button>
         </div>
       </div>
     </section>

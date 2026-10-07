@@ -150,3 +150,53 @@ const NOT_TODAY_LINES = [
   "Rest day accepted. But I'm writing it down.",
   "Fine. I'll do some stretches for both of us.",
 ];
+
+// ---------- Coach mode: David Goggins (used with permission, non-commercial) ----------
+// The coach barges in when you open the Excuse Buster or skip 3+ days.
+
+const COACH = { name: "David Goggins", tag: "COACH" };
+
+// Optional media you have the rights to. Drop files in assets/coach/ and list them here.
+// Leave empty to use the illustrated badge and built-in sound effects.
+const COACH_MEDIA = {
+  photo: "", // e.g. "assets/coach/photo.jpg"
+  clips: [], // e.g. ["assets/coach/clip1.mp3", "assets/coach/clip2.mp3"]
+};
+
+// Real quotes, always shown with attribution. Keys let excuses pick fitting ones.
+const GOGGINS_QUOTES = {
+  done: "Don't stop when you're tired. Stop when you're done.",
+  boats: "Who's gonna carry the boats?",
+  soft: "You are in danger of living a life so comfortable and soft that you will die without ever realizing your true potential.",
+  forty: "When you think that you are done, you're only at 40% of what your body is capable of doing.",
+  callus: "You have to build calluses on your brain just like how you build calluses on your hands.",
+  obsessed: "Be more than motivated, be more than driven, become literally obsessed to the point where people think you're nuts.",
+  suffering: "Suffering is the true test of life.",
+  conversations: "The most important conversations you'll ever have are the ones you'll have with yourself.",
+  denial: "Denial is the ultimate comfort zone.",
+  greatness: "If you can get through doing things that you hate to do, on the other side is greatness.",
+  schedule: "It takes relentless self-discipline to schedule suffering into your day, every day.",
+  motivation: "Motivation is crap. Motivation comes and goes.",
+  stayhard: "Stay hard!",
+};
+
+// Which quotes the coach throws at each excuse, plus a harder no-nonsense plan.
+const COACH_EXCUSES = {
+  tired: { quotes: ["forty", "done"], hardPlan: ["10 min warm-up, no phone", "4 × 12 goblet squats", "4 × 10 push-ups", "Finish with a 1 min plank. Then 1 more."] },
+  time: { quotes: ["schedule", "denial"], hardPlan: ["EMOM for 15 min:", "Odd minutes: 15 burpees", "Even minutes: 20 air squats", "No rest beyond the minute."] },
+  sore: { quotes: ["callus", "suffering"], hardPlan: ["20 min incline walk", "Mobility for every sore muscle", "3 × 15 light band work", "Sore is not injured. Show up."] },
+  weather: { quotes: ["soft", "boats"], hardPlan: ["Home gauntlet, 5 rounds:", "20 jumping jacks", "15 lunges each leg", "15 push-ups", "30 sec wall sit"] },
+  clueless: { quotes: ["conversations", "greatness"], hardPlan: ["Full-body, 4 × 10:", "Squat", "Bench or push-ups", "Row", "Then 15 min hard cardio"] },
+  crowded: { quotes: ["boats", "obsessed"], hardPlan: ["Grab one set of dumbbells.", "5 rounds: 10 thrusters", "10 renegade rows", "10 walking lunges", "Own that corner."] },
+  mood: { quotes: ["motivation", "greatness"], hardPlan: ["Shoes on. Out the door.", "20 min of the thing you hate most", "Then do what you like", "Discipline > mood."] },
+  tomorrow: { quotes: ["soft", "denial"], hardPlan: ["Today. Not tomorrow.", "30 min, anything", "Pack the bag for tomorrow too", "Two days > zero days."] },
+};
+
+// Original UI copy (not quotes).
+const COACH_TOASTS = [
+  "Who's gonna carry the boats? YOU DID. 💀",
+  "That's one more callus on the mind. 🔥",
+  "You didn't negotiate with yourself today. Respect.",
+];
+
+const COACH_SKIP_DAYS = 3;

@@ -41,19 +41,23 @@ function saveState() {
   }
 }
 
+const DEFAULTS = {
+  xp: 0,
+  level: 1,
+  streak: 0,
+  lastWorkout: null,
+  history: [],
+  busterUsedDate: null,
+  coachDismissedDate: null,
+  sound: true,
+};
+
+// Merge defaults so saves from older versions pick up new fields.
 let state = loadState();
+if (state) state = { ...DEFAULTS, ...state };
 
 function newState(species, name) {
-  return {
-    species,
-    name,
-    xp: 0,
-    level: 1,
-    streak: 0,
-    lastWorkout: null,
-    history: [],
-    busterUsedDate: null,
-  };
+  return { ...DEFAULTS, species, name };
 }
 
 // ---------- pet logic ----------
@@ -108,11 +112,9 @@ function checkIn() {
   render();
   confetti();
   bounce("dance");
-  toast(
-    leveledUp
-      ? `LEVEL UP! ${state.name} is now level ${state.level}! 🎉`
-      : `+${gained} XP${busted ? " (excuse busted bonus!)" : ""} · ${state.streak} day streak 🔥`
-  );
+  if (leveledUp) toast(`LEVEL UP! ${state.name} is now level ${state.level}! 🎉`);
+  else if (busted) toast(`+${gained} XP · ${pick(COACH_TOASTS)}`);
+  else toast(`+${gained} XP · ${state.streak} day streak 🔥`);
 }
 
 // ---------- rendering ----------
@@ -150,6 +152,7 @@ function render() {
   btn.disabled = doneToday;
   btn.textContent = doneToday ? "Done today ✅" : "I went! 💪";
   $("btn-excuse").hidden = doneToday;
+  $("btn-sound").textContent = state.sound ? "🔊" : "🔇";
 
   renderWeek();
 }
@@ -187,10 +190,12 @@ function renderExcuses() {
 
 function bust(ex) {
   currentExcuse = ex;
+  const coach = COACH_EXCUSES[ex.id];
   for (const c of document.querySelectorAll(".chip")) c.classList.toggle("active", c.textContent.includes(ex.label));
+  $("bust-quote").textContent = GOGGINS_QUOTES[pick(coach.quotes)];
   $("bust-pet").textContent = speciesEmoji();
-  $("bust-talk").textContent = pick(ex.talks);
-  $("bust-plan").innerHTML = ex.plan.map((s) => `<li>${s}</li>`).join("");
+  $("bust-talk").textContent = `…what he said. ${pick(ex.talks)}`;
+  $("bust-plan").innerHTML = coach.hardPlan.map((s) => `<li>${s}</li>`).join("");
   const box = $("bust");
   box.hidden = false;
   box.classList.remove("pop");
@@ -203,7 +208,102 @@ function openExcuses() {
   currentExcuse = null;
   $("bust").hidden = true;
   for (const c of document.querySelectorAll(".chip")) c.classList.remove("active");
+  enterCoachMode();
   show("excuses");
+}
+
+// ---------- coach mode ----------
+function enterCoachMode() {
+  document.body.classList.add("coach-mode");
+  sting();
+}
+
+function exitCoachMode() {
+  document.body.classList.remove("coach-mode");
+  stopSpeech();
+}
+
+function renderCoachAvatars() {
+  const html = COACH_MEDIA.photo
+    ? `<img src="${COACH_MEDIA.photo}" alt="${COACH.name}">`
+    : `<span class="badge-skull">💀</span><span class="badge-fire">🔥</span><span class="badge-ribbon">STAY HARD</span>`;
+  for (const el of document.querySelectorAll(".coach-avatar")) {
+    el.innerHTML = html;
+    const img = el.querySelector("img");
+    // Fall back to the badge if the photo is missing.
+    if (img) img.onerror = () => { COACH_MEDIA.photo = ""; renderCoachAvatars(); };
+  }
+  for (const el of document.querySelectorAll(".coach-attr")) el.textContent = `— ${COACH.name}`;
+}
+
+function maybeShowCoach() {
+  const d = daysSinceWorkout();
+  const today = todayStr();
+  const due = d !== null && d >= COACH_SKIP_DAYS && state.coachDismissedDate !== today && state.busterUsedDate !== today;
+  if (!due || !$("coach-overlay").hidden) return;
+  $("coach-title").textContent = `${d} DAYS. ${state.name.toUpperCase()} CALLED FOR BACKUP.`;
+  $("overlay-quote").textContent = GOGGINS_QUOTES[pick(["soft", "boats", "denial", "done", "callus"])];
+  $("coach-overlay").hidden = false;
+  document.body.classList.add("coach-mode");
+}
+
+function closeCoach() {
+  $("coach-overlay").hidden = true;
+  exitCoachMode();
+}
+
+// ---------- sound ----------
+let audioCtx;
+
+function sting() {
+  if (!state.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    // Air-horn: a few detuned sawtooths with a quick pitch drop.
+    for (const f of [440, 443, 554]) {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * 0.92, t + 0.6);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.08, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.65);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + 0.7);
+    }
+  } catch {
+    // No Web Audio: stay silent.
+  }
+}
+
+function stopSpeech() {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+// Plays one of your own clips if configured, otherwise reads the quote aloud.
+function playSoundBite(quote) {
+  if (!state.sound) return toast("Sound is off 🔇");
+  if (COACH_MEDIA.clips.length) {
+    const a = new Audio(pick(COACH_MEDIA.clips));
+    a.play().catch(() => speak(quote));
+    return;
+  }
+  speak(quote);
+}
+
+function speak(text) {
+  sting();
+  if (!("speechSynthesis" in window)) return;
+  stopSpeech();
+  const u = new SpeechSynthesisUtterance(text);
+  u.pitch = 0.6;
+  u.rate = 0.95;
+  const voices = speechSynthesis.getVoices();
+  u.voice = voices.find((v) => /en/i.test(v.lang) && /male|daniel|fred|alex|google uk english male/i.test(v.name)) || null;
+  setTimeout(() => speechSynthesis.speak(u), 450); // let the horn land first
 }
 
 // ---------- setup ----------
@@ -293,32 +393,65 @@ function confetti() {
 // ---------- wiring ----------
 $("btn-went").addEventListener("click", checkIn);
 $("btn-excuse").addEventListener("click", openExcuses);
-$("btn-back").addEventListener("click", () => show("home"));
+$("btn-back").addEventListener("click", () => {
+  exitCoachMode();
+  show("home");
+});
 $("btn-another").addEventListener("click", () => currentExcuse && bust(currentExcuse));
-$("btn-fine").addEventListener("click", () => {
+$("btn-hear").addEventListener("click", () => playSoundBite($("bust-quote").textContent));
+
+function commitToGo() {
   state.busterUsedDate = todayStr();
   saveState();
+  exitCoachMode();
   show("home");
   bounce("dance");
   $("bubble").textContent = "YES! Go go go! Tap “I went!” when you're done for bonus XP! 🎉";
-});
+}
+
+$("btn-fine").addEventListener("click", commitToGo);
 $("btn-nope").addEventListener("click", () => {
+  exitCoachMode();
   show("home");
   bounce("droop");
   $("bubble").textContent = pick(NOT_TODAY_LINES);
 });
 
+$("btn-overlay-hear").addEventListener("click", () => playSoundBite($("overlay-quote").textContent));
+$("btn-overlay-go").addEventListener("click", () => {
+  closeCoach();
+  commitToGo();
+});
+$("btn-overlay-snooze").addEventListener("click", () => {
+  state.coachDismissedDate = todayStr();
+  saveState();
+  closeCoach();
+  bounce("droop");
+  $("bubble").textContent = "He'll be back tomorrow. I'm just saying. 😬";
+});
+$("btn-sound").addEventListener("click", () => {
+  state.sound = !state.sound;
+  if (!state.sound) stopSpeech();
+  saveState();
+  render();
+});
+
 renderExcuses();
+renderCoachAvatars();
 if (state) {
   render();
   show("home");
+  maybeShowCoach();
 } else {
   renderSetup();
 }
 
 // Re-render when the app comes back to the foreground on a new day.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && state) render();
+  if (!document.hidden && state) {
+    render();
+    maybeShowCoach();
+  }
 });
 
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
