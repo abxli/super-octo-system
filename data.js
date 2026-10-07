@@ -163,7 +163,31 @@ const COACH_MEDIA = {
   clips: [], // real audio sound bites, e.g. ["assets/coach/clip1.mp3", "assets/coach/clip2.mp3"]
   // YouTube Shorts played in a small embedded player (needs internet).
   // id = the 11 characters after "shorts/" in the link. Optional start/end in seconds.
-  youtube: [{ id: "KHrtXxjoOrI" }, { id: "5SiPAKsJlqg" }],
+  // Played in random (shuffled) order; ones that are removed or block embedding are skipped.
+  youtube: [
+    { id: "KHrtXxjoOrI" },
+    { id: "5SiPAKsJlqg" },
+    { id: "3hTHIGdj1OI" },
+    { id: "yUVUFdLKusQ" },
+    { id: "pqH8dRoX2b8" },
+    { id: "P_tv2qnTym8" },
+    { id: "hDJU6LUQjGY" },
+    { id: "eFY3uxP-nj4" },
+    { id: "J4mSnTZUIL4" },
+    { id: "2fL1oPukWIc" },
+    { id: "TU16eaHpmqc" },
+    { id: "KDWy4GgZCI8" },
+    { id: "AvpjnGFkB1s" },
+    { id: "i4eYDCUR4sM" },
+    { id: "UxBOuHMvodo" },
+    { id: "mkXA_YuwlL8" },
+    { id: "Om4uzYCYUkE" },
+    { id: "1zddUDNb7jU" },
+    { id: "svD61akbubU" },
+    { id: "0-W2csLTgc8" },
+    { id: "weEv5QCO5fw" },
+    { id: "552tdknlNRI" },
+  ],
 };
 
 // Real quotes, always shown with attribution. Keys let excuses pick fitting ones.

@@ -224,6 +224,7 @@ function openExcuses() {
 function enterCoachMode() {
   document.body.classList.add("coach-mode");
   sting();
+  if (navigator.onLine) loadYouTubeApi().catch(() => {}); // warm up so the first Short starts fast
 }
 
 // A pep talk = one of his quotes + a closing catchphrase.
@@ -392,7 +393,7 @@ function playSoundBite(quote, finisher, button, finisherEl) {
   const yt = COACH_MEDIA.youtube.filter((c) => /^[\w-]{11}$/.test(c.id));
   const slot = button?.nextElementSibling;
   if (yt.length && navigator.onLine && slot?.classList.contains("yt-slot")) {
-    playYouTube(pickNew(yt, slot.dataset.last), slot, button);
+    playYouTube(yt, slot, button);
     return;
   }
 
@@ -459,26 +460,77 @@ function playSoundBite(quote, finisher, button, finisherEl) {
   hype.failsafe = setTimeout(stopHype, 30000);
 }
 
-// Random pick that avoids repeating the last clip.
-function pickNew(list, lastId) {
-  const options = list.length > 1 ? list.filter((c) => c.id !== lastId) : list;
-  return pick(options);
+// Shuffled queue so every Short plays once before any repeats.
+let ytBag = [];
+function nextClip(list) {
+  if (!ytBag.length) ytBag = [...list].sort(() => Math.random() - 0.5);
+  return ytBag.pop();
 }
 
-function playYouTube(clip, slot, button) {
-  const params = new URLSearchParams({ autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 });
-  if (clip.start) params.set("start", Math.floor(clip.start));
-  if (clip.end) params.set("end", Math.floor(clip.end));
-  const frame = document.createElement("iframe");
-  frame.src = `https://www.youtube-nocookie.com/embed/${clip.id}?${params}`;
-  frame.title = `${COACH.name} sound bite`;
-  frame.allow = "autoplay; encrypted-media; picture-in-picture";
-  frame.referrerPolicy = "strict-origin-when-cross-origin";
+// The YouTube IFrame API lets us skip Shorts that were removed or don't allow embedding.
+let ytApi;
+function loadYouTubeApi() {
+  ytApi =
+    ytApi ||
+    new Promise((resolve, reject) => {
+      if (window.YT?.Player) return resolve(window.YT);
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        prev?.();
+        resolve(window.YT);
+      };
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      tag.onerror = reject;
+      document.head.appendChild(tag);
+      setTimeout(() => reject(new Error("YouTube API timeout")), 6000);
+    }).catch((e) => {
+      ytApi = null; // try again next time
+      throw e;
+    });
+  return ytApi;
+}
+
+function playYouTube(list, slot, button, tries = 0) {
+  const clip = nextClip(list);
+  const vars = { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 };
+  if (clip.start) vars.start = Math.floor(clip.start);
+  if (clip.end) vars.end = Math.floor(clip.end);
   slot.innerHTML = "";
-  slot.appendChild(frame);
-  slot.dataset.last = clip.id;
   slot.hidden = false;
   hype = { button };
+
+  loadYouTubeApi()
+    .then((YT) => {
+      if (slot.hidden) return; // user already left
+      const host = document.createElement("div");
+      slot.innerHTML = "";
+      slot.appendChild(host);
+      new YT.Player(host, {
+        host: "https://www.youtube-nocookie.com",
+        videoId: clip.id,
+        playerVars: vars,
+        events: {
+          onReady: (e) => e.target.playVideo(),
+          // 2/5/100/101/150: bad id, can't play, removed, or embedding blocked → try another.
+          onError: () => {
+            if (slot.hidden) return;
+            if (tries < 5) playYouTube(list, slot, button, tries + 1);
+            else toast("Couldn't load a sound bite right now 😬");
+          },
+        },
+      });
+    })
+    .catch(() => {
+      // API blocked: plain embed (no auto-skip).
+      if (slot.hidden) return;
+      const frame = document.createElement("iframe");
+      frame.src = `https://www.youtube-nocookie.com/embed/${clip.id}?${new URLSearchParams(vars)}`;
+      frame.allow = "autoplay; encrypted-media; picture-in-picture";
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      slot.innerHTML = "";
+      slot.appendChild(frame);
+    });
 }
 
 function voiceHelp() {
